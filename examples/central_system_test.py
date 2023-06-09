@@ -1,33 +1,24 @@
 import logging
-logging.basicConfig(level=logging.NOTSET) # DEBUG)
-#logging.getLogger('ocpp').setLevel(level=logging.DEBUG)
-#logging.getLogger('ocpp').addHandler(logging.StreamHandler())
-
-logging.basicConfig(level=logging.NOTSET)
-#logging.basicConfig(level=logging.INFO)
-
 import asyncio
 from datetime import datetime
 import ssl
-
-try:
-    import websockets
-except ModuleNotFoundError:
-    print("This example relies on the 'websockets' package.")
-    print("Please install it by running: ")
-    print()
-    print(" $ pip install websockets")
-    import sys
-
-    sys.exit(1)
-
+import websockets
 from ocpp.routing import on
 from ocpp.v16 import ChargePoint as cp
 from ocpp.v16 import call_result
 from ocpp.v16.enums import Action, RegistrationStatus
 
+# set up logging
+logging.basicConfig(level=logging.NOTSET) # DEBUG)
+#logging.basicConfig(level=logging.INFO)
+#logging.getLogger('ocpp').setLevel(level=logging.DEBUG)
+#logging.getLogger('ocpp').addHandler(logging.StreamHandler())
+
+# config
+CERT_PATH = "../cert/"
+
 ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-ssl_context.load_cert_chain("fullchain.pem", "privkey.pem")
+ssl_context.load_cert_chain(CERT_PATH + "fullchain.pem", CERT_PATH + "privkey.pem")
 
 
 class ChargePoint(cp):
@@ -73,7 +64,7 @@ async def on_connect(websocket, path):
 
 async def main():
     server = await websockets.serve(
-        on_connect, "", 9000, subprotocols=["ocpp1.6"], ssl=ssl_context
+        on_connect, "localhost", 9000, subprotocols=["ocpp1.6"], ssl=ssl_context
     )
 
     logging.info("Server Started listening to new connections...")
