@@ -3,6 +3,9 @@ logging.basicConfig(level=logging.NOTSET) # DEBUG)
 #logging.getLogger('ocpp').setLevel(level=logging.DEBUG)
 #logging.getLogger('ocpp').addHandler(logging.StreamHandler())
 
+logging.basicConfig(level=logging.NOTSET)
+#logging.basicConfig(level=logging.INFO)
+
 import asyncio
 from datetime import datetime
 import ssl
@@ -22,9 +25,6 @@ from ocpp.routing import on
 from ocpp.v16 import ChargePoint as cp
 from ocpp.v16 import call_result
 from ocpp.v16.enums import Action, RegistrationStatus
-
-logging.basicConfig(level=logging.NOTSET)
-#logging.basicConfig(level=logging.INFO)
 
 ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 ssl_context.load_cert_chain("fullchain.pem", "privkey.pem")
