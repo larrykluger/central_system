@@ -24,14 +24,13 @@ ssl_context.load_cert_chain(CERT_PATH + "fullchain.pem", CERT_PATH + "privkey.pe
 class ChargePoint(cp):
     @on(Action.BootNotification)
     def on_boot_notification(
-        self, charge_point_vendor: str, charge_point_model: str, **kwargs
-    ):
+        self, charge_point_vendor: str, charge_point_model: str, **kwargs):
         return call_result.BootNotificationPayload(
             current_time=datetime.utcnow().isoformat(),
             interval=10,
             status=RegistrationStatus.accepted,
         )
-
+    
 
 async def on_connect(websocket, path):
     """For every new charge point that connects, create a ChargePoint
