@@ -9,10 +9,10 @@ from ocpp.v16 import call_result
 from ocpp.v16.enums import Action, RegistrationStatus
 
 # set up logging
-logging.basicConfig(level=logging.NOTSET) # DEBUG)
+#logging.basicConfig(level=logging.NOTSET) # DEBUG)
 #logging.basicConfig(level=logging.INFO)
-#logging.getLogger('ocpp').setLevel(level=logging.DEBUG)
-#logging.getLogger('ocpp').addHandler(logging.StreamHandler())
+logging.getLogger('ocpp').setLevel(level=logging.INFO)
+logging.getLogger('ocpp').addHandler(logging.StreamHandler())
 
 # config
 CERT_PATH = "../cert/"
@@ -64,7 +64,7 @@ async def on_connect(websocket, path):
 
 async def main():
     server = await websockets.serve(
-        on_connect, "localhost", 9000, subprotocols=["ocpp1.6"], ssl=ssl_context
+        on_connect, "", 9000, subprotocols=["ocpp1.6"], ssl=ssl_context
     )
 
     logging.info("Server Started listening to new connections...")
