@@ -10,7 +10,7 @@ from ocpp.v16.enums import Action, RegistrationStatus
 
 # set up logging
 #logging.basicConfig(level=logging.NOTSET) # DEBUG)
-#logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO)
 logging.getLogger('ocpp').setLevel(level=logging.INFO)
 logging.getLogger('ocpp').addHandler(logging.StreamHandler())
 
@@ -21,16 +21,23 @@ ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 ssl_context.load_cert_chain(CERT_PATH + "fullchain.pem", CERT_PATH + "privkey.pem")
 
 
-class ChargePoint(cp):
+class ChargePoint(cp): # 
     @on(Action.BootNotification)
     def on_boot_notification(
-        self, charge_point_vendor: str, charge_point_model: str, **kwargs
-    ):
+        self, charge_point_vendor: str, charge_point_model: str, **kwargs):
         return call_result.BootNotificationPayload(
             current_time=datetime.utcnow().isoformat(),
             interval=10,
             status=RegistrationStatus.accepted,
         )
+    
+    @on(Action.Heartbeat)
+    def on_heartbeat_notification(
+        self, **kwargs):
+        return call_result.HeartbeatPayload(
+            current_time=datetime.utcnow().isoformat()
+        )
+
 
 
 async def on_connect(websocket, path):
@@ -57,8 +64,8 @@ async def on_connect(websocket, path):
         return await websocket.close()
 
     charge_point_id = path.strip("/")
+    logging.info("###################  Charge Point ID: %s", charge_point_id)
     cp = ChargePoint(charge_point_id, websocket)
-
     await cp.start()
 
 
