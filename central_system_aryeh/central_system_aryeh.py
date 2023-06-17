@@ -31,16 +31,29 @@ from functools import partial
 import ssl
 from ocpp.v16.enums import Action, RegistrationStatus
 from ocpp.v16 import call_result, call
-
-# set up logging
-#logging.basicConfig(level=logging.NOTSET) # DEBUG)
-#logging.basicConfig(level=logging.INFO)
-logging.getLogger('ocpp').setLevel(level=logging.INFO)
-logging.getLogger('ocpp').addHandler(logging.StreamHandler())
+from colorama import init as colorama_init
+from colorama import Fore
+from colorama import Style
 
 # config
 CERT_PATH = "cert/"
 USE_WSS = True
+log_level = 1 # 0 - none; 1 - some; 7 - ocpp INFO; 8 - Warning; 9 - Info; 10 - NotSet (all)
+
+if log_level >= 8:
+    # set up logging
+    if log_level > 0:
+        colorama_init()
+    if log_level == 7:
+        logging.getLogger('ocpp').setLevel(level=logging.INFO)
+        logging.getLogger('ocpp').addHandler(logging.StreamHandler())
+    match log_level:
+        case 8: level = logging.WARNING
+        case 9: level = logging.INFO
+        case 10: level = logging.NOTSET
+        case _: None
+    if logging > 7:
+        logging.basicConfig(level=level)
 
 if USE_WSS:
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
@@ -73,9 +86,8 @@ async def on_connect(websocket, path, csms):
     The ChargePoint is registered at the CSMS.
     """
     charge_point_id = path.strip("/")
-    cp = ChargePoint(charge_point_id, websocket)
-
-    print(f"Charger {cp.id} connected.")
+    cp = ChargePoint(id=charge_point_id, connection=websocket, log_level=log_level)
+    print(f"{Style.BRIGHT}{Fore.GREEN}Charger {cp.id} connected.{Style.RESET_ALL}")
 
     # If this handler returns the connection will be destroyed. Therefore we need some
     # synchronization mechanism that blocks until CSMS wants to close the connection.

@@ -5,13 +5,14 @@ From https://github.com/mobilityhouse/ocpp/issues/86
 import logging
 import asyncio
 from charge_point import ChargePoint
+from colorama import Fore
+from colorama import Style
 
-# set up logging
-#logging.basicConfig(level=logging.NOTSET) # DEBUG)
-#logging.basicConfig(level=logging.INFO)
-#logging.getLogger('ocpp').setLevel(level=logging.INFO)
-#logging.getLogger('ocpp').addHandler(logging.StreamHandler())
-
+log_level = 1
+def log(msg):
+    if log_level == 0:
+        return
+    print (msg)
 
 class CentralSystem:
     def __init__(self):
@@ -35,9 +36,9 @@ class CentralSystem:
         try:
             await cp.start()
         except Exception as e:
-            print(f"Charger {cp.id} disconnected: {e}")
+            print(f"{Fore.RED}Charger {cp.id} disconnected: {e}{Style.RESET_ALL}")
         finally:
-            # Make sure to remove referenc to charger after it disconnected.
+            # Make sure to remove reference to charger after it disconnected.
             del self._chargers[cp]
 
             # This will unblock the `on_connect()` handler and the connection

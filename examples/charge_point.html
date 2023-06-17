@@ -419,7 +419,7 @@
         var connectorId = parseInt($("#CUID").val());
         console.log("connectorId", connectorId);
         var strtT = JSON.stringify([
-          connectorId,
+          2,
           id,
           "StartTransaction",
           {
@@ -443,7 +443,7 @@
         logMsg("Connector status changed to: " + connector_locked);
         $("#yellow").show();
         var stpT = JSON.stringify([
-          Number($("#transactionId").val()),
+          2,
           id,
           "StopTransaction",
           {
