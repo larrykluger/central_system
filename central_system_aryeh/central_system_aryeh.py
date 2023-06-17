@@ -76,7 +76,6 @@ async def disconnect_charger(request):
     except ValueError as e:
         print(f"Failed to disconnect charger: {e}")
         return web.Response(status=404)
-
     return web.Response()
 
 

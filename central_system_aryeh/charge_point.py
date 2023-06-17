@@ -59,18 +59,21 @@ class ChargePoint(cp):
                 'expiry_date': (datetime.utcnow() + timedelta(days=1)).isoformat(),
                 'parent_id_tag': "10",
                 'status': RegistrationStatus.accepted},
-            transaction_id="123"
+            transaction_id=123
         )
 
     @on(Action.StopTransaction)
     def on_stop_transaction_notitication(self, meter_stop, timestamp, transaction_id, **kwargs):
-        self.log(f"{Style.BRIGHT}{Fore.CYAN}Start Transaction{Style.RESET_ALL}")
+        self.log(f"{Style.BRIGHT}{Fore.CYAN}Stop Transaction{Style.RESET_ALL}")
         self.log(f"    meter_stop: {meter_stop}")
         self.log(f"    timestamp: {timestamp}")
         self.log(f"    transaction_id: {transaction_id}")
         self.log(f"    Kwargs: {kwargs}")
         return call_result.StopTransactionPayload(
-            status=RegistrationStatus.accepted,
+            id_tag_info={
+                'expiry_date': (datetime.utcnow() + timedelta(days=1)).isoformat(),
+                'parent_id_tag': "10",
+                'status': RegistrationStatus.accepted},
         )
 
 
