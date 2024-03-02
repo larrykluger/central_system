@@ -18,6 +18,15 @@ $  curl --header "Content-Type: application/json" \
   --request POST \
   --data '{"id":"CHARGE_POINT_1"}' \
   http://localhost:8080/disconnect
+
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{"id":""}' \
+  http://localhost:8080/disconnect
+
+curl --request GET   http://localhost:8080/id//configuration
+
+
 Here code of the CSMS with the HTTP API:
 """
 
@@ -29,6 +38,7 @@ from central_system import CentralSystem
 from aiohttp import web
 from functools import partial
 import ssl
+import json
 from ocpp.v16.enums import Action, RegistrationStatus
 from ocpp.v16 import call_result, call
 from colorama import init as colorama_init
@@ -38,7 +48,7 @@ from colorama import Style
 # config
 CERT_PATH = "cert/"
 USE_WSS = True
-log_level = 1 # 0 - none; 1 - some; 7 - ocpp INFO; 8 - Warning; 9 - Info; 10 - NotSet (all)
+log_level = 7 # 0 - none; 1 - some; 7 - ocpp INFO; 8 - Warning; 9 - Info; 10 - NotSet (all)
 
 if log_level >= 8:
     # set up logging
@@ -52,7 +62,7 @@ if log_level >= 8:
         case 9: level = logging.INFO
         case 10: level = logging.NOTSET
         case _: None
-    if logging > 7:
+    if log_level > 7:
         logging.basicConfig(level=level)
 
 if USE_WSS:
@@ -78,6 +88,22 @@ async def disconnect_charger(request):
         return web.Response(status=404)
     return web.Response()
 
+async def get_configuration(request):
+    """ HTTP handler for getting charger configuration. """
+    id = request.match_info['id']
+    csms = request.app["csms"]
+
+    try:
+        result = await csms.get_configuration(id)
+        return web.Response(text=json.dumps(result))
+    except ValueError as e:
+        print(f"Failed to get configuration: {e}")
+        return web.Response(status=404)
+    return web.Response()
+
+async def ping(request):
+    """ HTTP handler for ping. """
+    return web.Response(text="Pong baby!")
 
 async def on_connect(websocket, path, csms):
     """ For every new charge point that connects, create a ChargePoint instance
@@ -85,6 +111,8 @@ async def on_connect(websocket, path, csms):
     The ChargePoint is registered at the CSMS.
     """
     charge_point_id = path.strip("/")
+    if charge_point_id == "":
+        charge_point_id = "none"
     cp = ChargePoint(id=charge_point_id, connection=websocket, log_level=log_level)
     print(f"{Style.BRIGHT}{Fore.GREEN}Charger {cp.id} connected.{Style.RESET_ALL}")
 
@@ -107,6 +135,8 @@ async def create_http_server(csms: CentralSystem):
     app = web.Application()
     app.add_routes([web.post("/", change_config)])
     app.add_routes([web.post("/disconnect", disconnect_charger)])
+    app.add_routes([web.get("/cp/{id}/configuration", get_configuration, allow_head=False)])
+    app.add_routes([web.get("/ping", ping)])
 
     # Put CSMS in app so it can be accessed from request handlers.
     # https://docs.aiohttp.org/en/stable/faq.html#where-do-i-put-my-database-connection-so-handlers-can-access-it

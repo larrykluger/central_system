@@ -27,6 +27,9 @@ class CentralSystem:
 
         # Store a reference to the task so we can cancel it later if needed.
         task = asyncio.create_task(self.start_charger(cp, queue))
+        # self._chargers[cp] is now a tuple!.
+        # The [0] element is the charger obj
+        # the [1] element is the queue obj
         self._chargers[cp] = task
 
         return queue
@@ -45,6 +48,7 @@ class CentralSystem:
             # will be destroyed.
             await queue.put(True)
 
+    ### FIX
     async def change_configuration(self, key: str, value: str):
         for cp in self._chargers:
             await cp.change_configuration(key, value)
@@ -54,5 +58,11 @@ class CentralSystem:
             if cp.id == id:
                 task.cancel()
                 return 
-
         raise ValueError(f"Charger {id} not connected.")
+    
+    async def get_configuration(self, id: str):
+        for cp, task in self._chargers.items():
+            if cp.id == id:
+                return await cp.get_configuration()
+        raise ValueError(f"Charger {id} not connected.")
+

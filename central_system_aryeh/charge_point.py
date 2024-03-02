@@ -16,6 +16,10 @@ class ChargePoint(cp):
         self.log_level = log_level
         super().__init__(id, connection, response_timeout)
 
+    # ===========================================================================
+    # ===================== MESSAGES FROM THE CHARGE POINT ======================
+    # ===========================================================================
+
     @on(Action.Authorize)
     def on_authorize_notification(self, id_tag):
         self.log(f"{Style.BRIGHT}{Fore.CYAN}Authorize{Style.RESET_ALL}")
@@ -39,6 +43,15 @@ class ChargePoint(cp):
             status=RegistrationStatus.accepted,
         )
 
+    @on(Action.StatusNotification)
+    def on_status_notification(self, connector_id, error_code, status, **kwargs):
+        self.log(f"{Style.BRIGHT}{Fore.CYAN}Status notification{Style.RESET_ALL}")
+        self.log(f"    connector_id: {connector_id}")
+        self.log(f"    error_code: {error_code}")
+        self.log(f"    status: {status}")
+        self.log(f"    Kwargs: {kwargs}")
+        return call_result.StatusNotificationPayload()
+
     @on(Action.Heartbeat)
     def on_heartbeat_notification(self, **kwargs):
         self.log(f"{Fore.RED}♥{Style.RESET_ALL}")
@@ -47,7 +60,7 @@ class ChargePoint(cp):
         )
 
     @on(Action.StartTransaction)
-    def on_start_transaction_notitication(self, connector_id, id_tag, meter_start, timestamp, **kwargs):
+    def on_start_transaction_notification(self, connector_id, id_tag, meter_start, timestamp, **kwargs):
         self.log(f"{Style.BRIGHT}{Fore.CYAN}Start Transaction{Style.RESET_ALL}")
         self.log(f"    connector_id: {connector_id}")
         self.log(f"    id_tag: {id_tag}")
@@ -76,22 +89,38 @@ class ChargePoint(cp):
                 'status': RegistrationStatus.accepted},
         )
 
+    # ===========================================================================
+    # ===================== MESSAGES TO THE CHARGE POINT ========================
+    # ===========================================================================
 
-    """
-    ===========================================================================
-    ============================== API METHODS ================================
-    ===========================================================================
-    """
     async def change_configuration(self, key: str, value: str):
+        """ OCPP 1.6 Section 5.3 Change Configuration 
+            returns: ChangeConfigurationResponse.json
+            https://github.com/mobilityhouse/ocpp/blob/master/ocpp/v16/schemas/ChangeConfigurationResponse.json
+        """
         # https://github.com/mobilityhouse/ocpp/blob/master/ocpp/charge_point.py#L240
         return await self.call(call.ChangeConfigurationPayload(key=key, value=value))
     
+    async def clear_cache(self):
+        """ OCPP 1.6 Section 5.4 Clear Cache
+            Clears the authorization cache 
+            returns: ClearCacheResponse 
+            https://github.com/mobilityhouse/ocpp/blob/master/ocpp/v16/schemas/ClearCacheResponse.json
+        """
+        return await self.call(call.ClearCachePayload())
+    
+    async def get_configuration(self):
+        """ OCPP 1.6 Section 5.8 Get Configuration
+            Get all of the configuration settings 
+            returns: GetConfigurationResponse 
+            https://github.com/mobilityhouse/ocpp/blob/master/ocpp/v16/schemas/GetConfigurationResponse.json
+        """
+        return await self.call(call.GetConfigurationPayload())
 
-    """
-    ===========================================================================
-    ============================== UTILITY METHODS ============================
-    ===========================================================================
-    """
+
+    # ===========================================================================
+    # ============================== UTILITY METHODS ============================
+    # ===========================================================================
     def log(self, msg):
         if self.log_level == 0:
             return

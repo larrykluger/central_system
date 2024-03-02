@@ -11,3 +11,11 @@ activate:
 `deactivate` to stop it
 
 `pip install -r requirements.txt`
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ocpp GitHub https://github.com/mobilityhouse/ocpp
+
+pip install package_name==specific_version
+
+Write requirements.txt: 
