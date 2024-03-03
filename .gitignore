@@ -2,7 +2,7 @@ cert/
 bin/
 include/
 lib/
-__pycache__/
+central_system_aryeh/__pycache__/
 lib64
 pyvenv.cfg
 
