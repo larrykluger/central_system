@@ -53,6 +53,13 @@ class CentralSystem:
         for cp in self._chargers:
             await cp.change_configuration(key, value)
 
+    def charger_id(self):
+        """ Returns the charger id or None"""
+        for cp, task in self._chargers.items():
+            return cp.id 
+        return None
+        raise ValueError(f"Charger {id} not connected.")
+
     def disconnect_charger(self, id: str):
         for cp, task in self._chargers.items():
             if cp.id == id:
@@ -65,4 +72,11 @@ class CentralSystem:
             if cp.id == id:
                 return await cp.get_configuration()
         raise ValueError(f"Charger {id} not connected.")
+    
+    async def remote_start_transaction(self, id, id_tag: str, connector_id: int):
+        for cp, task in self._chargers.items():
+            if cp.id == id:
+                return await cp.remote_start_transaction(id_tag, connector_id)
+        raise ValueError(f"Charger {id} not connected.")
+
 

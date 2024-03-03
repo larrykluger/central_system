@@ -76,7 +76,7 @@ class ChargePoint(cp):
         )
 
     @on(Action.StopTransaction)
-    def on_stop_transaction_notitication(self, meter_stop, timestamp, transaction_id, **kwargs):
+    def on_stop_transaction_notification(self, meter_stop, timestamp, transaction_id, **kwargs):
         self.log(f"{Style.BRIGHT}{Fore.CYAN}Stop Transaction{Style.RESET_ALL}")
         self.log(f"    meter_stop: {meter_stop}")
         self.log(f"    timestamp: {timestamp}")
@@ -88,6 +88,54 @@ class ChargePoint(cp):
                 'parent_id_tag': "10",
                 'status': RegistrationStatus.accepted},
         )
+
+    @on(Action.MeterValues)
+    def on_meter_values_notification(self, connector_id, meter_value, **kwargs):
+        self.log(f"{Style.BRIGHT}{Fore.CYAN}Meter Values{Style.RESET_ALL}")
+        self.log(f"    connector_id: {connector_id}")
+        self.log(f"    timestamp: {meter_value[0]['timestamp']}")
+        for val in meter_value[0]['sampled_value']:
+            if   val['measurand'] == 'Current.Import': measure = "Current"
+            elif val['measurand'] == 'Energy.Active.Import.Register': measure = "Energy"
+            elif val['measurand'] == 'Power.Active.Import': measure = "Power"
+            elif val['measurand'] == 'Voltage': measure = "Voltage"
+            phase = ""
+            if 'phase' in val: phase = f"Phase {val['phase']}" 
+            self.log(f"    {measure}: {val['value']}{val['unit']}. {phase}")
+        self.log(f"    Kwargs: {kwargs}")
+        return call_result.MeterValuesPayload()
+    
+    """
+    example payload=
+    {'connectorId': 1, 'transactionId': 123, 
+    'meterValue': [
+        {'timestamp': '2024-03-03T10:40:30.001Z', 'sampledValue': [
+            {'value': '15.643', 'context': 'Sample.Periodic', 'format': 'Raw', 
+            'measurand': 'Current.Import', 'phase': 'L1', 'location': 'Outlet', 'unit': 'A'},
+            {'value': '15.478', 'context': 'Sample.Periodic', 'format': 'Raw', 
+            'measurand': 'Current.Import', 'phase': 'L2', 'location': 'Outlet', 'unit': 'A'}, 
+            {'value': '15.471', 'context': 'Sample.Periodic', 'format': 'Raw', 
+            'measurand': 'Current.Import', 'phase': 'L3', 'location': 'Outlet', 'unit': 'A'},
+            
+            {'value': '1004.000', 'unit': 'Wh', 'context': 'Sample.Periodic', 'format': 'Raw', 
+            'measurand': 'Energy.Active.Import.Register', 'location': 'Outlet'}, 
+
+            {'value': '3.740', 'context': 'Sample.Periodic', 'format': 'Raw', 
+            'measurand': 'Power.Active.Import', 'phase': 'L1-N', 'location': 'Outlet', 'unit': 'kW'}, 
+            {'value': '3.653', 'context': 'Sample.Periodic', 'format': 'Raw', 
+            'measurand': 'Power.Active.Import', 'phase': 'L2-N', 'location': 'Outlet', 'unit': 'kW'}, 
+            {'value': '3.651', 'context': 'Sample.Periodic', 'format': 'Raw', 
+            'measurand': 'Power.Active.Import', 'phase': 'L3-N', 'location': 'Outlet', 'unit': 'kW'}, 
+
+            {'value': '239.557', 'context': 'Sample.Periodic', 'format': 'Raw', 
+            'measurand': 'Voltage', 'phase': 'L1-N', 'location': 'Outlet', 'unit': 'V'}, 
+            {'value': '236.675', 'context': 'Sample.Periodic', 'format': 'Raw', 
+            'measurand': 'Voltage', 'phase': 'L2-N', 'location': 'Outlet', 'unit': 'V'}, 
+            {'value': '236.581', 'context': 'Sample.Periodic', 'format': 'Raw', 
+            'measurand': 'Voltage', 'phase': 'L3-N', 'location': 'Outlet', 'unit': 'V'}
+        ]}
+    ]}
+    """
 
     # ===========================================================================
     # ===================== MESSAGES TO THE CHARGE POINT ========================
@@ -116,7 +164,14 @@ class ChargePoint(cp):
             https://github.com/mobilityhouse/ocpp/blob/master/ocpp/v16/schemas/GetConfigurationResponse.json
         """
         return await self.call(call.GetConfigurationPayload())
-
+    
+    async def remote_start_transaction(self, id_tag: str, connector_id: int):
+        """ OCPP 1.6 Section 5.11 Remote Start Transaction 
+            returns: RemoteStartTransactionResponse.json
+            https://github.com/mobilityhouse/ocpp/blob/master/ocpp/v16/schemas/RemoteStartTransactionResponse.json
+        """
+        # https://github.com/mobilityhouse/ocpp/blob/master/ocpp/charge_point.py#L240
+        return await self.call(call.RemoteStartTransactionPayload(id_tag=id_tag, connector_id=connector_id))
 
     # ===========================================================================
     # ============================== UTILITY METHODS ============================

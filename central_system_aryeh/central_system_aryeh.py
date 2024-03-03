@@ -44,10 +44,13 @@ from ocpp.v16 import call_result, call
 from colorama import init as colorama_init
 from colorama import Fore
 from colorama import Style
+import pprint
 
 # config
 CERT_PATH = "cert/"
 USE_WSS = True
+CONNECTOR_ID = 1 # The charge point's connector number when it only has one connector.
+ID_TAG = "an id tag"
 log_level = 7 # 0 - none; 1 - some; 7 - ocpp INFO; 8 - Warning; 9 - Info; 10 - NotSet (all)
 
 if log_level >= 8:
@@ -68,6 +71,14 @@ if log_level >= 8:
 if USE_WSS:
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     ssl_context.load_cert_chain(CERT_PATH + "fullchain.pem", CERT_PATH + "privkey.pem")
+
+async def home_page(request):
+    """ HTTP handler for home_page. """
+    return web.Response(text="Hello world!")
+
+async def ping(request):
+    """ HTTP handler for ping. """
+    return web.Response(text="Pong baby!")
 
 async def change_config(request):
     """ HTTP handler for changing configuration of all charge points. """
@@ -90,20 +101,49 @@ async def disconnect_charger(request):
 
 async def get_configuration(request):
     """ HTTP handler for getting charger configuration. """
-    id = request.match_info['id']
     csms = request.app["csms"]
-
+    if hasattr(request.match_info, 'id'):
+        id = request.match_info['id']
+    else:
+        id = csms.charger_id()
+    if not id:
+        return web.Response(text="No charger")
     try:
         result = await csms.get_configuration(id)
-        return web.Response(text=json.dumps(result))
+        # result is <class 'ocpp.v16.call_result.GetConfigurationPayload'>
+        response = f"""
+<h1>Configuration</h1>
+<pre><code>{pprint.pformat(result, indent=4)}</code></pre>
+"""
+        return web.Response(text=response)
     except ValueError as e:
         print(f"Failed to get configuration: {e}")
         return web.Response(status=404)
     return web.Response()
 
-async def ping(request):
-    """ HTTP handler for ping. """
-    return web.Response(text="Pong baby!")
+async def remote_start(request):
+    """ HTTP handler for sending remote start. 
+    See OCPP docs section 5.11, page 49"""
+    csms = request.app["csms"]
+    if hasattr(request.match_info, 'id'):
+        id = request.match_info['id']
+    else:
+        id = csms.charger_id()
+    if not id:
+        return web.Response(text="No charger")
+    try:
+        result = await csms.remote_start_transaction(id, ID_TAG, CONNECTOR_ID)
+        # result is https://github.com/mobilityhouse/ocpp/blob/master/ocpp/v16/schemas/RemoteStartTransactionResponse.json
+        response = f"""
+<h1>Remote Start Transaction: Response</h1>
+<pre><code>{pprint.pformat(result, indent=4)}</code></pre>
+"""
+        return web.Response(text=response)
+    except ValueError as e:
+        print(f"Failed to get configuration: {e}")
+        return web.Response(status=404)
+    return web.Response()
+
 
 async def on_connect(websocket, path, csms):
     """ For every new charge point that connects, create a ChargePoint instance
@@ -133,10 +173,14 @@ async def create_websocket_server(csms: CentralSystem):
 
 async def create_http_server(csms: CentralSystem):
     app = web.Application()
-    app.add_routes([web.post("/", change_config)])
-    app.add_routes([web.post("/disconnect", disconnect_charger)])
-    app.add_routes([web.get("/cp/{id}/configuration", get_configuration, allow_head=False)])
-    app.add_routes([web.get("/ping", ping)])
+    app.add_routes([web.get("/", home_page),
+                    web.post("/", change_config),
+                    web.post("/disconnect", disconnect_charger),
+                    web.get("/cp/{id}/configuration", get_configuration, allow_head=False),
+                    web.get("/cp/configuration", get_configuration, allow_head=False),
+                    web.get("/cp/{id}/remotestart", remote_start, allow_head=False),
+                    web.get("/cp/remotestart", remote_start, allow_head=False),
+                    web.get("/ping", ping)])
 
     # Put CSMS in app so it can be accessed from request handlers.
     # https://docs.aiohttp.org/en/stable/faq.html#where-do-i-put-my-database-connection-so-handlers-can-access-it
@@ -145,22 +189,22 @@ async def create_http_server(csms: CentralSystem):
     # https://docs.aiohttp.org/en/stable/web_advanced.html#application-runners
     runner = web.AppRunner(app)
     await runner.setup()
-
-    site = web.TCPSite(runner, "localhost", 8080)
-    print ("Web server active on 8080")
-    return site
-
+    site = web.TCPSite(runner, None, 8000) # listen to all sources (don't use "localhost")
+    print ("Web server active on 8000")
+    await site.start()
+    while True:
+        await asyncio.sleep(3600)  # sleep forever
 
 async def main():
     csms = CentralSystem()
+    await create_websocket_server(csms)
+    await create_http_server(csms)
 
-    websocket_server = await create_websocket_server(csms)
-    http_server = await create_http_server(csms)
+    #ws_task = asyncio.create_task (websocket_server.wait_closed())
+    #await asyncio.wait([ws_task])
 
-    ws_task = asyncio.create_task (websocket_server.wait_closed())
-    web_task = asyncio.create_task (http_server.start())
-    await asyncio.wait([ws_task, web_task])
-
+    #web_task = asyncio.create_task (http_server.start())
+    #await asyncio.wait([ws_task, web_task])
 
 if __name__ == "__main__":
     asyncio.run(main())

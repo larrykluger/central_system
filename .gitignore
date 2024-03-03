@@ -2,9 +2,9 @@ cert/
 bin/
 include/
 lib/
+__pycache__/
 lib64
 pyvenv.cfg
-
 
 
 # Compiled source #
@@ -15,6 +15,7 @@ pyvenv.cfg
 *.exe
 *.o
 *.so
+*.pyc
 
 # Packages #
 ############
