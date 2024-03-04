@@ -8,6 +8,8 @@ from charge_point import ChargePoint
 from colorama import Fore
 from colorama import Style
 
+# log_level of 8 or higher--print heartbeats
+
 log_level = 1
 def log(msg):
     if log_level == 0:
@@ -58,7 +60,6 @@ class CentralSystem:
         for cp, task in self._chargers.items():
             return cp.id 
         return None
-        raise ValueError(f"Charger {id} not connected.")
 
     def disconnect_charger(self, id: str):
         for cp, task in self._chargers.items():

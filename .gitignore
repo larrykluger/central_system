@@ -3,6 +3,7 @@ bin/
 include/
 lib/
 central_system_aryeh/__pycache__/
+/logs
 lib64
 pyvenv.cfg
 

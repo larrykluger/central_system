@@ -11,6 +11,8 @@ from datetime import timedelta
 # Base class
 # https://github.com/mobilityhouse/ocpp/blob/master/ocpp/charge_point.py
 
+# log_level of 8 or higher--print heartbeats
+
 class ChargePoint(cp):
     def __init__(self, id, connection, response_timeout=30, log_level=0):
         self.log_level = log_level
@@ -54,7 +56,8 @@ class ChargePoint(cp):
 
     @on(Action.Heartbeat)
     def on_heartbeat_notification(self, **kwargs):
-        self.log(f"{Fore.RED}♥{Style.RESET_ALL}")
+        if self.log_level > 7:
+            self.log(f"{Fore.RED}♥{Style.RESET_ALL}")
         return call_result.HeartbeatPayload(
             current_time=datetime.utcnow().isoformat()
         )

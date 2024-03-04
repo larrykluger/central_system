@@ -19,3 +19,10 @@ ocpp GitHub https://github.com/mobilityhouse/ocpp
 pip install package_name==specific_version
 
 Write requirements.txt: 
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Run in background
+
+source <venv>/bin/activate
+nohup python central_system_aryeh/central_system_aryeh.py > logs/log.txt &
